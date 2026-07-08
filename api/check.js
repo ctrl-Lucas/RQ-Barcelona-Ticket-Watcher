@@ -23,8 +23,8 @@ module.exports = async function handler(req, res) {
         emails.map((email) =>
           sendEmail(
             email,
-            'Tickets available: Riftbound Regional Qualifier Barcelona',
-            `<p>Tickets just became available again (status: <b>${sales.message}</b>).</p>` +
+            '🚨 Tickets available: Riftbound Regional Qualifier Barcelona 🚨',
+            `<p>🚨 Tickets just became available again! 🚨</p>` +
               `<p><a href="${EVENT_URL}">Buy tickets now</a></p>`
           )
         )
