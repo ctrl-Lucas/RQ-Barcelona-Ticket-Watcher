@@ -1,5 +1,6 @@
 const { sendEmail } = require('./_brevo');
 const { isValidPassword } = require('./_auth');
+const { checkRateLimit } = require('./_ratelimit');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -15,6 +16,13 @@ module.exports = async function handler(req, res) {
   }
   if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
     return res.status(400).json({ error: 'Please provide a valid email address.' });
+  }
+
+  const rateLimit = await checkRateLimit('test-email', req, { maxRequests: 3, windowMs: 10 * 60 * 1000 });
+  if (!rateLimit.allowed) {
+    return res
+      .status(429)
+      .json({ error: `Too many test emails sent. Try again in ${Math.ceil(rateLimit.retryAfterSeconds / 60)} minute(s).` });
   }
 
   try {

@@ -2,6 +2,7 @@ const { getFile, putFile } = require('./_github');
 const { isValidPassword } = require('./_auth');
 const { sendEmail } = require('./_brevo');
 const { EVENT_URL } = require('./_eventbrite');
+const { checkRateLimit } = require('./_ratelimit');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -29,6 +30,13 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'Please provide a valid email address.' });
   }
   const normalized = email.trim().toLowerCase();
+
+  const rateLimit = await checkRateLimit('subscribe', req, { maxRequests: 5, windowMs: 10 * 60 * 1000 });
+  if (!rateLimit.allowed) {
+    return res
+      .status(429)
+      .json({ error: `Too many attempts. Try again in ${Math.ceil(rateLimit.retryAfterSeconds / 60)} minute(s).` });
+  }
 
   try {
     const { content: emails, sha } = await getFile('emails.json');
