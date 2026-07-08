@@ -1,0 +1,14 @@
+name: Ping ticket check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call check endpoint
+        run: |
+          curl -sS -f "${{ vars.CHECK_URL }}?secret=${{ secrets.CRON_SECRET }}"

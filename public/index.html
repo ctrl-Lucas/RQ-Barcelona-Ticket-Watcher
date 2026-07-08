@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Riftbound Barcelona — Ticket Alert</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 480px;
+    margin: 10vh auto;
+    padding: 0 1.5rem;
+    text-align: center;
+  }
+  h1 { font-size: 1.4rem; }
+  p { color: #666; }
+  form { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
+  input[type="email"] {
+    flex: 1;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  button {
+    padding: 0.7rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    background: #111;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #status { margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
+  #status.error { color: #c0392b; }
+  #status.ok { color: #27ae60; }
+  /* Honeypot: hidden from real users, bots often fill every field */
+  .hp { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+  <h1>Get notified when tickets are available</h1>
+  <p>Riftbound Regional Qualifier — Barcelona. Tickets are currently sold out. We check every 5 minutes and will email you the moment they open back up.</p>
+
+  <form id="signup-form">
+    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" />
+    <input type="email" name="email" placeholder="you@example.com" required />
+    <button type="submit">Notify me</button>
+  </form>
+  <div id="status"></div>
+
+  <script>
+    const form = document.getElementById('signup-form');
+    const statusEl = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = form.email.value.trim();
+      const website = form.website.value;
+      const button = form.querySelector('button');
+
+      button.disabled = true;
+      statusEl.textContent = '';
+      statusEl.className = '';
+
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, website }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+        statusEl.textContent = data.message || "You're on the list!";
+        statusEl.className = 'ok';
+        form.reset();
+      } catch (err) {
+        statusEl.textContent = err.message;
+        statusEl.className = 'error';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
