@@ -64,7 +64,14 @@ vercel env add BREVO_SENDER_EMAIL production
 vercel env add BREVO_SENDER_NAME production     # e.g. "Ticket Watcher"
 vercel env add EVENT_URL production             # the Eventbrite URL
 vercel env add CRON_SECRET production           # any random string you make up
+vercel env add SIGNUP_PASSWORD production       # gates the signup/test-email forms
+vercel env add SIGNUP_PASSWORD_2 production     # a second valid password (either works)
 ```
+
+Note: non-ASCII passwords (e.g. an emoji) can get mangled by `vercel env add`'s
+stdin handling on some shells. If that happens, set the value via the Vercel
+API directly instead (`POST /v10/projects/<project>/env`) with a UTF-8 JSON
+body — that path isn't subject to terminal/stdin encoding quirks.
 
 Deploy:
 
