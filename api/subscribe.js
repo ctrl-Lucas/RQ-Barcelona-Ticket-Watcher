@@ -1,19 +1,23 @@
 const { getFile, putFile } = require('./_github');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SIGNUP_PASSWORD = process.env.SIGNUP_PASSWORD;
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, website } = req.body || {};
+  const { email, website, password } = req.body || {};
 
   // Honeypot field: bots fill hidden fields, humans never see it.
   if (website) {
     return res.status(200).json({ ok: true });
   }
 
+  if (!SIGNUP_PASSWORD || password !== SIGNUP_PASSWORD) {
+    return res.status(403).json({ error: 'Incorrect password.' });
+  }
   if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
     return res.status(400).json({ error: 'Please provide a valid email address.' });
   }

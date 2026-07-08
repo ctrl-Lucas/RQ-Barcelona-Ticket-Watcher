@@ -9,20 +9,27 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     max-width: 480px;
-    margin: 10vh auto;
+    margin: 6vh auto;
     padding: 0 1.5rem;
     text-align: center;
   }
-  h1 { font-size: 1.4rem; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.3rem; }
   p { color: #666; }
-  form { display: flex; gap: 0.5rem; margin-top: 1.5rem; }
-  input[type="email"] {
+  section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e0e0e0;
+  }
+  section h2 { font-size: 1rem; margin-bottom: 0.6rem; }
+  form { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+  input[type="email"], input[type="password"] {
     flex: 1;
     padding: 0.7rem 0.9rem;
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 1rem;
   }
+  .password-row { margin-top: 0.75rem; }
   button {
     padding: 0.7rem 1.2rem;
     border: none;
@@ -31,58 +38,142 @@
     color: #fff;
     font-size: 1rem;
     cursor: pointer;
+    white-space: nowrap;
   }
   button:disabled { opacity: 0.5; cursor: default; }
-  #status { margin-top: 1rem; font-size: 0.9rem; min-height: 1.2em; }
-  #status.error { color: #c0392b; }
-  #status.ok { color: #27ae60; }
-  /* Honeypot: hidden from real users, bots often fill every field */
+  a.event-button {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.8rem 1.4rem;
+    border-radius: 6px;
+    background: #e63946;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .status-line { margin-top: 0.75rem; font-size: 0.9rem; min-height: 1.2em; }
+  .status-line.error { color: #c0392b; }
+  .status-line.ok { color: #27ae60; }
+  #last-checked { font-size: 0.85rem; color: #888; margin-top: 0.5rem; }
   .hp { position: absolute; left: -9999px; }
 </style>
 </head>
 <body>
-  <h1>Get notified when tickets are available</h1>
-  <p>Riftbound Regional Qualifier — Barcelona. Tickets are currently sold out. We check every 5 minutes and will email you the moment they open back up.</p>
+  <h1>Riftbound Regional Qualifier — Barcelona</h1>
+  <p>Tickets are currently sold out. We check every 5 minutes and email the list the moment they open back up.</p>
+  <a class="event-button" href="https://www.eventbrite.com/e/riftbound-regional-qualifier-barcelona-tickets-1992319038877" target="_blank" rel="noopener">Go to event page</a>
+  <div id="last-checked">Checking last status…</div>
 
-  <form id="signup-form">
-    <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" />
-    <input type="email" name="email" placeholder="you@example.com" required />
-    <button type="submit">Notify me</button>
-  </form>
-  <div id="status"></div>
+  <section>
+    <h2>Get notified</h2>
+    <div class="password-row">
+      <input type="password" id="shared-password" placeholder="Password" />
+    </div>
+    <form id="signup-form">
+      <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" />
+      <input type="email" name="email" placeholder="you@example.com" required />
+      <button type="submit">Notify me</button>
+    </form>
+    <div id="signup-status" class="status-line"></div>
+  </section>
+
+  <section>
+    <h2>Send test email</h2>
+    <p style="margin-top:0">Not sure notifications will reach your inbox? Send yourself a test.</p>
+    <form id="test-form">
+      <input type="email" name="email" placeholder="you@example.com" required />
+      <button type="submit">Send test</button>
+    </form>
+    <div id="test-status" class="status-line"></div>
+  </section>
 
   <script>
-    const form = document.getElementById('signup-form');
-    const statusEl = document.getElementById('status');
+    const sharedPassword = document.getElementById('shared-password');
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = form.email.value.trim();
-      const website = form.website.value;
-      const button = form.querySelector('button');
+    async function postJson(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+      return data;
+    }
 
-      button.disabled = true;
-      statusEl.textContent = '';
-      statusEl.className = '';
+    function wireForm(formId, statusId, buildBody, defaultOk) {
+      const form = document.getElementById(formId);
+      const statusEl = document.getElementById(statusId);
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const button = form.querySelector('button');
+        button.disabled = true;
+        statusEl.textContent = '';
+        statusEl.className = 'status-line';
+        try {
+          const data = await postJson(form.dataset.endpoint, buildBody(form));
+          statusEl.textContent = data.message || defaultOk;
+          statusEl.className = 'status-line ok';
+          form.reset();
+        } catch (err) {
+          statusEl.textContent = err.message;
+          statusEl.className = 'status-line error';
+        } finally {
+          button.disabled = false;
+        }
+      });
+    }
 
-      try {
-        const res = await fetch('/api/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, website }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Something went wrong.');
-        statusEl.textContent = data.message || "You're on the list!";
-        statusEl.className = 'ok';
-        form.reset();
-      } catch (err) {
-        statusEl.textContent = err.message;
-        statusEl.className = 'error';
-      } finally {
-        button.disabled = false;
+    document.getElementById('signup-form').dataset.endpoint = '/api/subscribe';
+    document.getElementById('test-form').dataset.endpoint = '/api/test-email';
+
+    wireForm('signup-form', 'signup-status', (form) => ({
+      email: form.email.value.trim(),
+      website: form.website.value,
+      password: sharedPassword.value,
+    }), "You're on the list!");
+
+    wireForm('test-form', 'test-status', (form) => ({
+      email: form.email.value.trim(),
+      password: sharedPassword.value,
+    }), 'Test email sent — check your inbox (and spam folder).');
+
+    // Last checked timestamp, updating live client-side.
+    const lastCheckedEl = document.getElementById('last-checked');
+    let lastCheckedAt = null;
+
+    function formatAgo(date) {
+      const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+      if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'} ago`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+      const hours = Math.floor(minutes / 60);
+      return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    }
+
+    function renderLastChecked() {
+      if (!lastCheckedAt) {
+        lastCheckedEl.textContent = 'Last check time unavailable.';
+        return;
       }
-    });
+      const time = lastCheckedAt.toLocaleTimeString();
+      lastCheckedEl.textContent = `Last checked at ${time}, ${formatAgo(lastCheckedAt)}`;
+    }
+
+    fetch('/api/status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.lastCheckedAt) {
+          lastCheckedAt = new Date(data.lastCheckedAt);
+          renderLastChecked();
+          setInterval(renderLastChecked, 1000);
+        } else {
+          lastCheckedEl.textContent = 'Last check time unavailable.';
+        }
+      })
+      .catch(() => {
+        lastCheckedEl.textContent = 'Last check time unavailable.';
+      });
   </script>
 </body>
 </html>
