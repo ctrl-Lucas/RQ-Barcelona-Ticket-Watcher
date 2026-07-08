@@ -23,9 +23,9 @@ module.exports = async function handler(req, res) {
         emails.map((email) =>
           sendEmail(
             email,
-            '🚨 Tickets available: Riftbound Regional Qualifier Barcelona 🚨',
-            `<p>🚨 Tickets just became available again! 🚨</p>` +
-              `<p><a href="${EVENT_URL}">Buy tickets now</a></p>`
+            'Riftbound Barcelona: event page status changed',
+            `<p>The status on the Riftbound Regional Qualifier Barcelona event page just changed.</p>` +
+              `<p>You can check it here: <a href="${EVENT_URL}">${EVENT_URL}</a></p>`
           )
         )
       );
