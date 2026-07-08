@@ -160,20 +160,25 @@
       lastCheckedEl.textContent = `Last checked at ${time}, ${formatAgo(lastCheckedAt)}`;
     }
 
-    fetch('/api/status')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.lastCheckedAt) {
-          lastCheckedAt = new Date(data.lastCheckedAt);
-          renderLastChecked();
-          setInterval(renderLastChecked, 1000);
-        } else {
-          lastCheckedEl.textContent = 'Last check time unavailable.';
-        }
-      })
-      .catch(() => {
-        lastCheckedEl.textContent = 'Last check time unavailable.';
-      });
+    function refreshStatus() {
+      fetch('/api/status')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.lastCheckedAt) {
+            lastCheckedAt = new Date(data.lastCheckedAt);
+            renderLastChecked();
+          } else if (!lastCheckedAt) {
+            lastCheckedEl.textContent = 'Last check time unavailable.';
+          }
+        })
+        .catch(() => {
+          if (!lastCheckedAt) lastCheckedEl.textContent = 'Last check time unavailable.';
+        });
+    }
+
+    refreshStatus();
+    setInterval(renderLastChecked, 1000); // ticks the "X ago" text every second
+    setInterval(refreshStatus, 20000); // re-pulls the real timestamp from the server
   </script>
 </body>
 </html>
