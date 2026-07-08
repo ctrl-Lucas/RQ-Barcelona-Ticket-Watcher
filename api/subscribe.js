@@ -1,7 +1,14 @@
 const { getFile, putFile } = require('./_github');
 const { isValidPassword } = require('./_auth');
+const { sendEmail } = require('./_brevo');
+const { EVENT_URL } = require('./_eventbrite');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const DISCLAIMER =
+  'There is no guarantee that an email will be sent when tickets become available — this tool checks ' +
+  'every 5 minutes on a best-effort basis and could fail silently. Providing your email address is at ' +
+  'your own risk; it is handled with care, but delivery and security are not guaranteed.';
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -30,6 +37,19 @@ module.exports = async function handler(req, res) {
     }
     emails.push(normalized);
     await putFile('emails.json', emails, sha, `Add subscriber ${normalized}`);
+
+    try {
+      await sendEmail(
+        normalized,
+        "You're on the list — Riftbound Barcelona Ticket Watcher",
+        `<p>You've been added to the recipient list for the Riftbound Regional Qualifier Barcelona ticket watcher.</p>` +
+          `<p>We check <a href="${EVENT_URL}">the event page</a> every 5 minutes and will email this list the moment tickets become available.</p>` +
+          `<p style="color:#888;font-size:0.85em">${DISCLAIMER}</p>`
+      );
+    } catch (err) {
+      console.error('Failed to send confirmation email:', err);
+    }
+
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error(err);
