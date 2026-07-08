@@ -56,6 +56,15 @@
   .status-line.ok { color: #27ae60; }
   #last-checked { font-size: 0.85rem; color: #888; margin-top: 0.5rem; }
   .hp { position: absolute; left: -9999px; }
+  .locked { display: none; }
+  .disclaimer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
+    font-size: 0.78rem;
+    color: #999;
+    line-height: 1.4;
+  }
 </style>
 </head>
 <body>
@@ -65,10 +74,14 @@
   <div id="last-checked">Checking last status…</div>
 
   <section>
-    <h2>Get notified</h2>
+    <h2>Unlock</h2>
     <div class="password-row">
       <input type="password" id="shared-password" placeholder="Password" />
     </div>
+  </section>
+
+  <section id="notify-section" class="locked">
+    <h2>Get notified</h2>
     <form id="signup-form">
       <input type="text" name="website" class="hp" tabindex="-1" autocomplete="off" />
       <input type="email" name="email" placeholder="you@example.com" required />
@@ -77,7 +90,7 @@
     <div id="signup-status" class="status-line"></div>
   </section>
 
-  <section>
+  <section id="test-section" class="locked">
     <h2>Send test email</h2>
     <p style="margin-top:0">Not sure notifications will reach your inbox? Send yourself a test.</p>
     <form id="test-form">
@@ -87,8 +100,24 @@
     <div id="test-status" class="status-line"></div>
   </section>
 
+  <p class="disclaimer">
+    There is no guarantee that an email will be sent when tickets become available — this tool checks
+    every 5 minutes on a best-effort basis and could fail silently. Providing your email address is at
+    your own risk; it is handled with care, but delivery and security are not guaranteed.
+  </p>
+
   <script>
     const sharedPassword = document.getElementById('shared-password');
+    const notifySection = document.getElementById('notify-section');
+    const testSection = document.getElementById('test-section');
+
+    // Client-side reveal only (UX convenience) — the real check happens server-side on submit.
+    const REVEAL_PASSWORDS = ['WhenWarwickLegend', '🐺'];
+    sharedPassword.addEventListener('input', () => {
+      const unlocked = REVEAL_PASSWORDS.includes(sharedPassword.value);
+      notifySection.classList.toggle('locked', !unlocked);
+      testSection.classList.toggle('locked', !unlocked);
+    });
 
     async function postJson(url, body) {
       const res = await fetch(url, {

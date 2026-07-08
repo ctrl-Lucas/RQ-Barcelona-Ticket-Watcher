@@ -1,7 +1,7 @@
 const { getFile, putFile } = require('./_github');
+const { isValidPassword } = require('./_auth');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const SIGNUP_PASSWORD = process.env.SIGNUP_PASSWORD;
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  if (!SIGNUP_PASSWORD || password !== SIGNUP_PASSWORD) {
+  if (!isValidPassword(password)) {
     return res.status(403).json({ error: 'Incorrect password.' });
   }
   if (typeof email !== 'string' || !EMAIL_RE.test(email.trim())) {
